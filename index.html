@@ -18,32 +18,12 @@
       position: relative;
       text-align: center;
       padding: 20px;
-      background: rgba(255, 255, 255, 0.85);
-      overflow: hidden;
+      background: #2196F3;
+      color: white;
     }
 
-    .header::before {
-      content: "";
-      background-image: url("https://raw.githubusercontent.com/edoadityasaputra/barcode-to-sheet/main/BG.jpg");
-      background-size: cover;
-      background-position: center;
-      opacity: 0.25;
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: -1;
-    }
-
-    .header h2 {
+    .header h2, .header h3 {
       margin: 5px 0;
-      color: #222;
-    }
-
-    .header h3 {
-      margin: 0;
-      color: #555;
     }
 
     #reader {
@@ -96,48 +76,60 @@
 
   <iframe id="formFrame" name="formFrame"></iframe>
 
-    <div id="reader"></div>
-  <div id="result"></div>
-  <button id="rescanBtn" style="display:none;">Scan Ulang</button>
-
-  <iframe id="formFrame" name="formFrame"></iframe>
-
-  <!-- ✅ Tambahkan tombol test ini -->
+  <!-- Tombol tes manual -->
   <button onclick="sendToGoogleSheet('TesManual')">Test Kirim Manual</button>
 
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyt90nBRahqD68aMazNhn40rgWRJIbhQkHRqv0zekLUQEQYC6ANU1dQ_nTKIZfdOE4o/exec";
 
- <script>
-  const scriptURL = "https://script.google.com/macros/s/AKfycbyt90nBRahqD68aMazNhn40rgWRJIbhQkHRqv0zekLUQEQYC6ANU1dQ_nTKIZfdOE4o/exec";
+    function sendToGoogleSheet(nama) {
+      const tanggal = new Date().toLocaleDateString("id-ID", {
+        day: "2-digit", month: "2-digit", year: "numeric"
+      });
 
-  function sendToGoogleSheet(nama) {
-    const tanggal = new Date().toLocaleDateString("id-ID", {
-      day: "2-digit", month: "2-digit", year: "numeric"
+      const form = document.createElement("form");
+      form.action = scriptURL;
+      form.method = "POST";
+      form.target = "formFrame";
+
+      const inputNama = document.createElement("input");
+      inputNama.name = "nama";
+      inputNama.value = nama;
+      form.appendChild(inputNama);
+
+      const inputTanggal = document.createElement("input");
+      inputTanggal.name = "tanggal";
+      inputTanggal.value = tanggal;
+      form.appendChild(inputTanggal);
+
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
+
+      document.getElementById("result").innerHTML =
+        `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}`;
+    }
+
+    function onScanSuccess(decodedText) {
+      html5QrcodeScanner.clear();
+      document.getElementById("result").innerHTML =
+        `Data terbaca: <b>${decodedText}</b><br>Mengirim ke Google Sheet...`;
+      sendToGoogleSheet(decodedText);
+      document.getElementById("rescanBtn").style.display = "inline-block";
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+      fps: 10,
+      qrbox: { width: 250, height: 250 }
     });
 
-    const form = document.createElement("form");
-    form.action = scriptURL;
-    form.method = "POST";
-    form.target = "hiddenFrame";
+    html5QrcodeScanner.render(onScanSuccess);
 
-    const inputNama = document.createElement("input");
-    inputNama.name = "nama";
-    inputNama.value = nama;
-    form.appendChild(inputNama);
-
-    const inputTanggal = document.createElement("input");
-    inputTanggal.name = "tanggal";
-    inputTanggal.value = tanggal;
-    form.appendChild(inputTanggal);
-
-    document.body.appendChild(form);
-    form.submit();
-    form.remove();
-
-    document.getElementById("result").innerHTML =
-      `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}`;
-  }
-</script>
-
-
+    document.getElementById("rescanBtn").addEventListener("click", () => {
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("rescanBtn").style.display = "none";
+      html5QrcodeScanner.render(onScanSuccess);
+    });
+  </script>
 </body>
 </html>

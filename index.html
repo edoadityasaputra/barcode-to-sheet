@@ -1,1 +1,7 @@
-tes
+// Kirim hasil scan ke Google Sheet
+fetch("https://script.google.com/macros/s/AKfycbworCbaRrQt-jeE8pQ6dmMZry3MH4YIuY-_bedSUaDz8Xqsrag-Q0gUjHSZpPM4Zw9c/exec", {
+  method: "POST",
+  body: new URLSearchParams({
+    nama: nama
+  })
+});

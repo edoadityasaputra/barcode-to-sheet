@@ -114,42 +114,30 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
 
-    fetch(scriptURL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ nama: nama, tanggal: tanggal })
-    })
-    .then(() => {
-      document.getElementById("result").innerHTML =
-        `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}`;
-    })
-    .catch(err => {
-      document.getElementById("result").innerText = "Gagal mengirim data!";
-      console.error(err);
-    });
+    const form = document.createElement("form");
+    form.action = scriptURL;
+    form.method = "POST";
+    form.target = "hiddenFrame";
+
+    const inputNama = document.createElement("input");
+    inputNama.name = "nama";
+    inputNama.value = nama;
+    form.appendChild(inputNama);
+
+    const inputTanggal = document.createElement("input");
+    inputTanggal.name = "tanggal";
+    inputTanggal.value = tanggal;
+    form.appendChild(inputTanggal);
+
+    document.body.appendChild(form);
+    form.submit();
+    form.remove();
+
+    document.getElementById("result").innerHTML =
+      `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}`;
   }
-
-  function onScanSuccess(decodedText, decodedResult) {
-    html5QrcodeScanner.clear();
-    document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b><br>Mengirim ke Google Sheet...`;
-    sendToGoogleSheet(decodedText);
-    document.getElementById("rescanBtn").style.display = "inline-block";
-  }
-
-  const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-    fps: 10,
-    qrbox: { width: 250, height: 250 }
-  });
-
-  html5QrcodeScanner.render(onScanSuccess);
-
-  document.getElementById("rescanBtn").addEventListener("click", () => {
-    document.getElementById("result").innerHTML = "";
-    document.getElementById("rescanBtn").style.display = "none";
-    html5QrcodeScanner.render(onScanSuccess);
-  });
 </script>
+
 
 </body>
 </html>

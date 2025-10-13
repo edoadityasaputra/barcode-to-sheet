@@ -1,7 +1,144 @@
-// Kirim hasil scan ke Google Sheet
-fetch("https://script.google.com/macros/s/AKfycbworCbaRrQt-jeE8pQ6dmMZry3MH4YIuY-_bedSUaDz8Xqsrag-Q0gUjHSZpPM4Zw9c/exec", {
-  method: "POST",
-  body: new URLSearchParams({
-    nama: nama
-  })
-});
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi Barcode Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      position: relative;
+      text-align: center;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: "";
+      background-image: url("https://raw.githubusercontent.com/edoadityasaputra/barcode-to-sheet/main/BG.jpg");
+      background-size: cover;
+      background-position: center;
+      opacity: 0.25;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+    }
+
+    .header h2 {
+      margin: 5px 0;
+      color: #222;
+    }
+
+    .header h3 {
+      margin: 0;
+      color: #555;
+    }
+
+    #reader {
+      width: 90%;
+      max-width: 400px;
+      margin: 20px auto;
+      background-color: #87CEFA;
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 15px;
+      border: none;
+      border-radius: 10px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    iframe {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="https://edoadityasaputra.github.io/barcode-to-sheet/MI-Khoirul-Huda_C3.png" 
+         alt="Logo MI Khoirul Huda" 
+         style="width: 120px; height: auto; border-radius: 10px; margin-bottom: 10px;">
+    <h2>Scan Presensi Informatika</h2>
+    <h3>MI Khoirul Huda Bedahan</h3>
+  </div>
+
+  <div id="reader"></div>
+  <div id="result"></div>
+  <button id="rescanBtn" style="display:none;">Scan Ulang</button>
+
+  <iframe id="formFrame" name="formFrame"></iframe>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbworCbaRrQt-jeE8pQ6dmMZry3MH4YIuY-_bedSUaDz8Xqsrag-Q0gUjHSZpPM4Zw9c/exec";
+
+    function sendToGoogleSheet(nama) {
+      const tanggal = new Date().toLocaleDateString("id-ID", {
+        day: "2-digit", month: "2-digit", year: "numeric"
+      });
+
+      fetch(scriptURL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ nama: nama, tanggal: tanggal })
+      })
+      .then(() => {
+        document.getElementById("result").innerHTML =
+          `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}`;
+      })
+      .catch(err => {
+        document.getElementById("result").innerText = "Gagal mengirim data!";
+        console.error(err);
+      });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      html5QrcodeScanner.clear();
+      document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b><br>Mengirim ke Google Sheet...`;
+      sendToGoogleSheet(decodedText);
+      document.getElementById("rescanBtn").style.display = "inline-block";
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+      fps: 10,
+      qrbox: { width: 250, height: 250 }
+    });
+
+    html5QrcodeScanner.render(onScanSuccess);
+
+    document.getElementById("rescanBtn").addEventListener("click", () => {
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("rescanBtn").style.display = "none";
+      html5QrcodeScanner.render(onScanSuccess);
+    });
+  </script>
+</body>
+</html>

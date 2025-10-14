@@ -110,6 +110,8 @@
     kirimBtn.addEventListener("click", () => {
       const tanggal = new Date().toLocaleDateString("id-ID");
       const url = `${scriptURL}?nama=${encodeURIComponent(scannedData)}&tanggal=${encodeURIComponent(tanggal)}`;
+
+      resultDiv.innerHTML = "⏳ Sedang mengirim data... mohon tunggu";
       
       fetch(url)
         .then(() => {

@@ -41,19 +41,42 @@
       color: #333;
     }
 
+    .button-group {
+      margin-top: 15px;
+    }
+
     button {
       padding: 10px 20px;
-      margin-top: 15px;
+      margin: 5px;
       border: none;
       border-radius: 10px;
-      background-color: #4CAF50;
       color: white;
       font-size: 16px;
       cursor: pointer;
     }
 
-    button:hover {
+    #sendBtn {
+      background-color: #4CAF50;
+    }
+
+    #sendBtn:hover {
       background-color: #45a049;
+    }
+
+    #cancelBtn {
+      background-color: #f44336;
+    }
+
+    #cancelBtn:hover {
+      background-color: #da190b;
+    }
+
+    #rescanBtn {
+      background-color: #2196F3;
+    }
+
+    #rescanBtn:hover {
+      background-color: #1976D2;
     }
 
     button:disabled {
@@ -85,8 +108,11 @@
   <div id="reader"></div>
   <div id="result"></div>
 
-  <button id="sendBtn" style="display:none;">Kirim</button>
-  <button id="rescanBtn" style="display:none;" disabled>Scan Ulang</button>
+  <div class="button-group">
+    <button id="sendBtn" style="display:none;">Kirim</button>
+    <button id="cancelBtn" style="display:none;">Batal</button>
+    <button id="rescanBtn" style="display:none;">Scan Ulang</button>
+  </div>
 
   <div id="statusMsg"></div>
   <iframe id="formFrame" name="formFrame"></iframe>
@@ -105,18 +131,24 @@
 
       document.getElementById("statusMsg").innerText = "⏳ Mengirim data...";
       document.getElementById("sendBtn").disabled = true;
+      document.getElementById("cancelBtn").disabled = true;
 
       fetch(url)
         .then(response => response.text())
         .then(result => {
           document.getElementById("statusMsg").innerHTML = "✅ Data berhasil dikirim!";
           document.getElementById("result").innerHTML = `<b>${nama}</b><br>Tanggal: ${tanggal}`;
-          document.getElementById("rescanBtn").disabled = false;
+          
+          // Sembunyikan tombol kirim & batal, munculkan tombol scan ulang
+          document.getElementById("sendBtn").style.display = "none";
+          document.getElementById("cancelBtn").style.display = "none";
+          document.getElementById("rescanBtn").style.display = "inline-block";
         })
         .catch(err => {
           document.getElementById("statusMsg").innerText = "❌ Gagal mengirim data!";
           console.error(err);
           document.getElementById("sendBtn").disabled = false;
+          document.getElementById("cancelBtn").disabled = false;
         });
     }
 
@@ -125,7 +157,8 @@
       html5QrcodeScanner.clear();
       document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b>`;
       document.getElementById("sendBtn").style.display = "inline-block";
-      document.getElementById("statusMsg").innerText = "Klik tombol Kirim untuk menyimpan presensi.";
+      document.getElementById("cancelBtn").style.display = "inline-block";
+      document.getElementById("statusMsg").innerText = "Klik Kirim untuk menyimpan presensi atau Batal untuk scan ulang.";
     }
 
     const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
@@ -139,12 +172,20 @@
       if (scannedData) sendToGoogleSheet(scannedData);
     });
 
-    document.getElementById("rescanBtn").addEventListener("click", () => {
+    document.getElementById("cancelBtn").addEventListener("click", () => {
       scannedData = "";
       document.getElementById("result").innerHTML = "";
       document.getElementById("statusMsg").innerText = "";
       document.getElementById("sendBtn").style.display = "none";
-      document.getElementById("rescanBtn").disabled = true;
+      document.getElementById("cancelBtn").style.display = "none";
+      html5QrcodeScanner.render(onScanSuccess);
+    });
+
+    document.getElementById("rescanBtn").addEventListener("click", () => {
+      scannedData = "";
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("statusMsg").innerText = "";
+      document.getElementById("rescanBtn").style.display = "none";
       html5QrcodeScanner.render(onScanSuccess);
     });
   </script>

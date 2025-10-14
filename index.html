@@ -55,38 +55,21 @@
       cursor: pointer;
     }
 
-    #sendBtn {
-      background-color: #4CAF50;
-    }
+    #sendBtn { background-color: #4CAF50; }
+    #sendBtn:hover { background-color: #45a049; }
 
-    #sendBtn:hover {
-      background-color: #45a049;
-    }
+    #cancelBtn { background-color: #f44336; }
+    #cancelBtn:hover { background-color: #da190b; }
 
-    #cancelBtn {
-      background-color: #f44336;
-    }
-
-    #cancelBtn:hover {
-      background-color: #da190b;
-    }
-
-    #rescanBtn {
-      background-color: #2196F3;
-    }
-
-    #rescanBtn:hover {
-      background-color: #1976D2;
-    }
+    #rescanBtn { background-color: #2196F3; }
+    #rescanBtn:hover { background-color: #1976D2; }
 
     button:disabled {
       background-color: #aaa;
       cursor: not-allowed;
     }
 
-    iframe {
-      display: none;
-    }
+    iframe { display: none; }
 
     #statusMsg {
       margin-top: 10px;
@@ -119,8 +102,23 @@
 
   <script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec";
-
     let scannedData = "";
+    let scanner = null;
+
+    function startScanner() {
+      document.getElementById("reader").innerHTML = "";
+      scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+      scanner.render(onScanSuccess);
+    }
+
+    function stopScanner() {
+      if (scanner) {
+        try {
+          scanner.clear();
+        } catch (e) {}
+        scanner = null;
+      }
+    }
 
     function sendToGoogleSheet(nama) {
       const tanggal = new Date().toLocaleDateString("id-ID", {
@@ -128,21 +126,19 @@
       });
 
       const url = `${scriptURL}?nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(tanggal)}`;
-
       document.getElementById("statusMsg").innerText = "⏳ Mengirim data...";
       document.getElementById("sendBtn").disabled = true;
       document.getElementById("cancelBtn").disabled = true;
 
       fetch(url)
-        .then(response => response.text())
-        .then(result => {
+        .then(res => res.text())
+        .then(() => {
           document.getElementById("statusMsg").innerHTML = "✅ Data berhasil dikirim!";
           document.getElementById("result").innerHTML = `<b>${nama}</b><br>Tanggal: ${tanggal}`;
-          
-          // Sembunyikan tombol kirim & batal, munculkan tombol scan ulang
           document.getElementById("sendBtn").style.display = "none";
           document.getElementById("cancelBtn").style.display = "none";
           document.getElementById("rescanBtn").style.display = "inline-block";
+          stopScanner();
         })
         .catch(err => {
           document.getElementById("statusMsg").innerText = "❌ Gagal mengirim data!";
@@ -154,19 +150,13 @@
 
     function onScanSuccess(decodedText) {
       scannedData = decodedText;
-      html5QrcodeScanner.clear();
+      stopScanner();
       document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b>`;
       document.getElementById("sendBtn").style.display = "inline-block";
       document.getElementById("cancelBtn").style.display = "inline-block";
-      document.getElementById("statusMsg").innerText = "Klik Kirim untuk menyimpan presensi atau Batal untuk scan ulang.";
+      document.getElementById("statusMsg").innerText =
+        "Klik Kirim untuk menyimpan presensi atau Batal untuk scan ulang.";
     }
-
-    const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
-      fps: 10,
-      qrbox: { width: 250, height: 250 }
-    });
-
-    html5QrcodeScanner.render(onScanSuccess);
 
     document.getElementById("sendBtn").addEventListener("click", () => {
       if (scannedData) sendToGoogleSheet(scannedData);
@@ -178,7 +168,7 @@
       document.getElementById("statusMsg").innerText = "";
       document.getElementById("sendBtn").style.display = "none";
       document.getElementById("cancelBtn").style.display = "none";
-      html5QrcodeScanner.render(onScanSuccess);
+      startScanner();
     });
 
     document.getElementById("rescanBtn").addEventListener("click", () => {
@@ -186,8 +176,11 @@
       document.getElementById("result").innerHTML = "";
       document.getElementById("statusMsg").innerText = "";
       document.getElementById("rescanBtn").style.display = "none";
-      html5QrcodeScanner.render(onScanSuccess);
+      startScanner();
     });
+
+    // 🔹 Jalankan scanner saat pertama kali halaman dibuka
+    startScanner();
   </script>
 </body>
 </html>

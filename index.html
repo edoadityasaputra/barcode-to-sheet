@@ -41,44 +41,27 @@
       color: #333;
     }
 
-    .button-group {
-      margin-top: 15px;
-    }
-
-    button {
+    .btn {
       padding: 10px 20px;
-      margin: 5px;
+      margin: 10px 5px;
       border: none;
       border-radius: 10px;
-      color: white;
       font-size: 16px;
       cursor: pointer;
+      color: white;
     }
 
-    #sendBtn { background-color: #4CAF50; }
-    #sendBtn:hover { background-color: #45a049; }
-
-    #cancelBtn { background-color: #f44336; }
-    #cancelBtn:hover { background-color: #da190b; }
-
+    #kirimBtn { background-color: #4CAF50; }
+    #batalBtn { background-color: #f44336; }
     #rescanBtn { background-color: #2196F3; }
-    #rescanBtn:hover { background-color: #1976D2; }
 
-    button:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
-    }
+    .btn:hover { opacity: 0.9; }
 
-    iframe { display: none; }
-
-    #statusMsg {
-      margin-top: 10px;
-      font-size: 16px;
-      color: #555;
+    iframe {
+      display: none;
     }
   </style>
 </head>
-
 <body>
   <div class="header">
     <img src="https://edoadityasaputra.github.io/barcode-to-sheet/MI-Khoirul-Huda_C3.png" 
@@ -91,95 +74,73 @@
   <div id="reader"></div>
   <div id="result"></div>
 
-  <div class="button-group">
-    <button id="sendBtn" style="display:none;">Kirim</button>
-    <button id="cancelBtn" style="display:none;">Batal</button>
-    <button id="rescanBtn" style="display:none;">Scan Ulang</button>
-  </div>
+  <button id="kirimBtn" class="btn" style="display:none;">Kirim</button>
+  <button id="batalBtn" class="btn" style="display:none;">Batal</button>
+  <button id="rescanBtn" class="btn" style="display:none;">Scan Ulang</button>
 
-  <div id="statusMsg"></div>
   <iframe id="formFrame" name="formFrame"></iframe>
 
   <script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec";
+    const readerDiv = document.getElementById("reader");
+    const resultDiv = document.getElementById("result");
+    const kirimBtn = document.getElementById("kirimBtn");
+    const batalBtn = document.getElementById("batalBtn");
+    const rescanBtn = document.getElementById("rescanBtn");
+
+    let html5QrCode;
     let scannedData = "";
-    let scanner = null;
 
     function startScanner() {
-      document.getElementById("reader").innerHTML = "";
-      scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-      scanner.render(onScanSuccess);
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          scannedData = decodedText;
+          resultDiv.innerHTML = `<strong>Data Terdeteksi:</strong><br>${decodedText}`;
+          kirimBtn.style.display = "inline-block";
+          batalBtn.style.display = "inline-block";
+          html5QrCode.stop().then(() => html5QrCode.clear());
+        },
+        (errorMessage) => {}
+      ).catch((err) => console.error(err));
     }
 
-    function stopScanner() {
-      if (scanner) {
-        try {
-          scanner.clear();
-        } catch (e) {}
-        scanner = null;
-      }
-    }
-
-    function sendToGoogleSheet(nama) {
-      const tanggal = new Date().toLocaleDateString("id-ID", {
-        day: "2-digit", month: "2-digit", year: "numeric"
-      });
-
-      const url = `${scriptURL}?nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(tanggal)}`;
-      document.getElementById("statusMsg").innerText = "⏳ Mengirim data...";
-      document.getElementById("sendBtn").disabled = true;
-      document.getElementById("cancelBtn").disabled = true;
-
+    kirimBtn.addEventListener("click", () => {
+      const tanggal = new Date().toLocaleDateString("id-ID");
+      const url = `${scriptURL}?nama=${encodeURIComponent(scannedData)}&tanggal=${encodeURIComponent(tanggal)}`;
+      
       fetch(url)
-        .then(res => res.text())
         .then(() => {
-          document.getElementById("statusMsg").innerHTML = "✅ Data berhasil dikirim!";
-          document.getElementById("result").innerHTML = `<b>${nama}</b><br>Tanggal: ${tanggal}`;
-          document.getElementById("sendBtn").style.display = "none";
-          document.getElementById("cancelBtn").style.display = "none";
-          document.getElementById("rescanBtn").style.display = "inline-block";
-          stopScanner();
+          resultDiv.innerHTML = `<strong style="color:green;">Data berhasil dikirim!</strong><br>${scannedData}`;
+          kirimBtn.style.display = "none";
+          batalBtn.style.display = "none";
+          rescanBtn.style.display = "inline-block";
         })
-        .catch(err => {
-          document.getElementById("statusMsg").innerText = "❌ Gagal mengirim data!";
+        .catch((err) => {
+          resultDiv.innerHTML = `<span style="color:red;">Gagal mengirim data. Coba lagi.</span>`;
           console.error(err);
-          document.getElementById("sendBtn").disabled = false;
-          document.getElementById("cancelBtn").disabled = false;
         });
-    }
-
-    function onScanSuccess(decodedText) {
-      scannedData = decodedText;
-      stopScanner();
-      document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b>`;
-      document.getElementById("sendBtn").style.display = "inline-block";
-      document.getElementById("cancelBtn").style.display = "inline-block";
-      document.getElementById("statusMsg").innerText =
-        "Klik Kirim untuk menyimpan presensi atau Batal untuk scan ulang.";
-    }
-
-    document.getElementById("sendBtn").addEventListener("click", () => {
-      if (scannedData) sendToGoogleSheet(scannedData);
     });
 
-    document.getElementById("cancelBtn").addEventListener("click", () => {
-      scannedData = "";
-      document.getElementById("result").innerHTML = "";
-      document.getElementById("statusMsg").innerText = "";
-      document.getElementById("sendBtn").style.display = "none";
-      document.getElementById("cancelBtn").style.display = "none";
+    batalBtn.addEventListener("click", () => {
+      resultDiv.innerHTML = "Kembali ke mode scan...";
+      kirimBtn.style.display = "none";
+      batalBtn.style.display = "none";
+      setTimeout(() => {
+        resultDiv.innerHTML = "";
+        startScanner();
+      }, 500);
+    });
+
+    rescanBtn.addEventListener("click", () => {
+      rescanBtn.style.display = "none";
+      resultDiv.innerHTML = "";
       startScanner();
     });
 
-    document.getElementById("rescanBtn").addEventListener("click", () => {
-      scannedData = "";
-      document.getElementById("result").innerHTML = "";
-      document.getElementById("statusMsg").innerText = "";
-      document.getElementById("rescanBtn").style.display = "none";
-      startScanner();
-    });
-
-    // 🔹 Jalankan scanner saat pertama kali halaman dibuka
+    // Jalankan scanner pertama kali
     startScanner();
   </script>
 </body>

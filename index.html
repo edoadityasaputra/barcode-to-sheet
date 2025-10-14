@@ -56,8 +56,19 @@
       background-color: #45a049;
     }
 
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+
     iframe {
       display: none;
+    }
+
+    #statusMsg {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #555;
     }
   </style>
 </head>
@@ -73,15 +84,17 @@
 
   <div id="reader"></div>
   <div id="result"></div>
-  <button id="rescanBtn" style="display:none;">Scan Ulang</button>
+
+  <button id="sendBtn" style="display:none;">Kirim</button>
+  <button id="rescanBtn" style="display:none;" disabled>Scan Ulang</button>
+
+  <div id="statusMsg"></div>
   <iframe id="formFrame" name="formFrame"></iframe>
 
-  <!-- Tombol tes manual -->
-  <button onclick="sendToGoogleSheet('TesManual')">Test Kirim Manual</button>
-
   <script>
-    // Ganti dengan link deploy App Script kamu (yang sudah berhasil doGet)
     const scriptURL = "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec";
+
+    let scannedData = "";
 
     function sendToGoogleSheet(nama) {
       const tanggal = new Date().toLocaleDateString("id-ID", {
@@ -90,23 +103,29 @@
 
       const url = `${scriptURL}?nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(tanggal)}`;
 
+      document.getElementById("statusMsg").innerText = "⏳ Mengirim data...";
+      document.getElementById("sendBtn").disabled = true;
+
       fetch(url)
         .then(response => response.text())
         .then(result => {
-          document.getElementById("result").innerHTML =
-            `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}<br><small>${result}</small>`;
+          document.getElementById("statusMsg").innerHTML = "✅ Data berhasil dikirim!";
+          document.getElementById("result").innerHTML = `<b>${nama}</b><br>Tanggal: ${tanggal}`;
+          document.getElementById("rescanBtn").disabled = false;
         })
         .catch(err => {
-          document.getElementById("result").innerText = "Gagal mengirim data!";
+          document.getElementById("statusMsg").innerText = "❌ Gagal mengirim data!";
           console.error(err);
+          document.getElementById("sendBtn").disabled = false;
         });
     }
 
-    function onScanSuccess(decodedText, decodedResult) {
+    function onScanSuccess(decodedText) {
+      scannedData = decodedText;
       html5QrcodeScanner.clear();
-      document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b><br>Mengirim ke Google Sheet...`;
-      sendToGoogleSheet(decodedText);
-      document.getElementById("rescanBtn").style.display = "inline-block";
+      document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b>`;
+      document.getElementById("sendBtn").style.display = "inline-block";
+      document.getElementById("statusMsg").innerText = "Klik tombol Kirim untuk menyimpan presensi.";
     }
 
     const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
@@ -116,9 +135,16 @@
 
     html5QrcodeScanner.render(onScanSuccess);
 
+    document.getElementById("sendBtn").addEventListener("click", () => {
+      if (scannedData) sendToGoogleSheet(scannedData);
+    });
+
     document.getElementById("rescanBtn").addEventListener("click", () => {
+      scannedData = "";
       document.getElementById("result").innerHTML = "";
-      document.getElementById("rescanBtn").style.display = "none";
+      document.getElementById("statusMsg").innerText = "";
+      document.getElementById("sendBtn").style.display = "none";
+      document.getElementById("rescanBtn").disabled = true;
       html5QrcodeScanner.render(onScanSuccess);
     });
   </script>

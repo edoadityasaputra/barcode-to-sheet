@@ -61,6 +61,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="header">
     <img src="https://edoadityasaputra.github.io/barcode-to-sheet/MI-Khoirul-Huda_C3.png" 
@@ -73,34 +74,53 @@
   <div id="reader"></div>
   <div id="result"></div>
   <button id="rescanBtn" style="display:none;">Scan Ulang</button>
-
   <iframe id="formFrame" name="formFrame"></iframe>
 
   <!-- Tombol tes manual -->
   <button onclick="sendToGoogleSheet('TesManual')">Test Kirim Manual</button>
 
-<script>
-  const scriptURL = "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec";
+  <script>
+    // Ganti dengan link deploy App Script kamu (yang sudah berhasil doGet)
+    const scriptURL = "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec";
 
-  function sendToGoogleSheet(nama) {
-    const tanggal = new Date().toLocaleDateString("id-ID", {
-      day: "2-digit", month: "2-digit", year: "numeric"
+    function sendToGoogleSheet(nama) {
+      const tanggal = new Date().toLocaleDateString("id-ID", {
+        day: "2-digit", month: "2-digit", year: "numeric"
+      });
+
+      const url = `${scriptURL}?nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(tanggal)}`;
+
+      fetch(url)
+        .then(response => response.text())
+        .then(result => {
+          document.getElementById("result").innerHTML =
+            `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}<br><small>${result}</small>`;
+        })
+        .catch(err => {
+          document.getElementById("result").innerText = "Gagal mengirim data!";
+          console.error(err);
+        });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      html5QrcodeScanner.clear();
+      document.getElementById("result").innerHTML = `Data terbaca: <b>${decodedText}</b><br>Mengirim ke Google Sheet...`;
+      sendToGoogleSheet(decodedText);
+      document.getElementById("rescanBtn").style.display = "inline-block";
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+      fps: 10,
+      qrbox: { width: 250, height: 250 }
     });
 
-    const url = `${scriptURL}?nama=${encodeURIComponent(nama)}&tanggal=${encodeURIComponent(tanggal)}`;
+    html5QrcodeScanner.render(onScanSuccess);
 
-    fetch(url)
-      .then(response => response.text())
-      .then(result => {
-        document.getElementById("result").innerHTML =
-          `<b>${nama}</b><br>Presensi berhasil disimpan pada ${tanggal}<br><small>${result}</small>`;
-      })
-      .catch(err => {
-        document.getElementById("result").innerText = "Gagal mengirim data!";
-        console.error(err);
-      });
-  }
-</script>
-
+    document.getElementById("rescanBtn").addEventListener("click", () => {
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("rescanBtn").style.display = "none";
+      html5QrcodeScanner.render(onScanSuccess);
+    });
+  </script>
 </body>
 </html>

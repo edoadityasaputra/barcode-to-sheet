@@ -14,6 +14,16 @@
       padding: 0;
     }
 
+    /* 🔹 Bungkus semua konten agar bisa fullscreen */
+    #appContainer {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
     .header {
       position: relative;
       text-align: center;
@@ -26,6 +36,19 @@
       margin: 5px 0;
     }
 
+    /* 🔹 Dropdown kelas */
+    .kelas-selector {
+      margin-top: 15px;
+    }
+
+    select {
+      font-size: 16px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
     #reader {
       display: flex;
       justify-content: center;
@@ -33,14 +56,13 @@
       margin: 20px auto;
       width: 90%;
       max-width: 400px;
-      height: auto;
       background-color: #87CEFA;
       border-radius: 12px;
       padding: 10px;
       box-sizing: border-box;
     }
 
-      #reader video {
+    #reader video {
       width: 100% !important;
       height: auto !important;
       border-radius: 10px;
@@ -65,6 +87,7 @@
     #kirimBtn { background-color: #4CAF50; }
     #batalBtn { background-color: #f44336; }
     #rescanBtn { background-color: #2196F3; }
+    #fsBtn { background-color: #ff9800; }
 
     .btn:hover { opacity: 0.9; }
 
@@ -74,87 +97,190 @@
   </style>
 </head>
 <body>
-  <div class="header">
-    <img src="https://edoadityasaputra.github.io/barcode-to-sheet/MI-Khoirul-Huda_C3.png" 
-         alt="Logo MI Khoirul Huda" 
-         style="width: 120px; height: auto; border-radius: 10px; margin-bottom: 10px;">
-    <h2>Scan Presensi Informatika</h2>
-    <h3>MI Khoirul Huda Bedahan</h3>
+  <!-- 🔹 Bungkus semua dalam #appContainer agar bagian ini yang fullscreen -->
+  <div id="appContainer">
+    <div class="header">
+      <img src="https://edoadityasaputra.github.io/barcode-to-sheet/MI-Khoirul-Huda_C3.png" 
+           alt="Logo MI Khoirul Huda" 
+           style="width: 120px; height: auto; border-radius: 10px; margin-bottom: 10px;">
+      <h2>Scan Presensi Informatika</h2>
+      <h3>MI Khoirul Huda Bedahan</h3>
+
+      <!-- 🔹 Dropdown pilihan kelas -->
+      <div class="kelas-selector">
+        <label for="kelas">Pilih Kelas: </label>
+        <select id="kelas">
+          <option value="" disabled selected>-- Pilih Kelas --</option>
+          <option value="4A">Kelas 4A</option>
+          <option value="4B">Kelas 4B</option>
+          <option value="4C">Kelas 4C</option>
+          <option value="5A">Kelas 5A</option>
+          <option value="5B">Kelas 5B</option>
+          <option value="5C">Kelas 5C</option>
+          <option value="6A">Kelas 6A</option>
+          <option value="6B">Kelas 6B</option>
+          <option value="6C">Kelas 6C</option>
+        </select>
+      </div>
+
+      <!-- 🔹 Tombol fullscreen sementara -->
+      <div style="margin-top:15px;">
+        <button id="fsBtn" class="btn">📱 Fullscreen</button>
+        <button id="exitFsBtn" class="btn" style="display:none;">❌ Keluar</button>
+      </div>
+    </div>
+
+    <div id="reader"></div>
+    <div id="result"></div>
+
+    <button id="kirimBtn" class="btn" style="display:none;">Kirim</button>
+    <button id="batalBtn" class="btn" style="display:none;">Batal</button>
+    <button id="rescanBtn" class="btn" style="display:none;">Scan Ulang</button>
+
+    <iframe id="formFrame" name="formFrame"></iframe>
   </div>
 
-  <div id="reader"></div>
-  <div id="result"></div>
+  <!-- 🔹 Script Fullscreen akan disisipkan di bawah ini -->
+<script>
+  // 🔹 Daftar URL Google Apps Script per kelas
+  const scriptURLs = {
+    "4A": "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec",
+    "4B": "https://script.google.com/macros/s/AKfycbwoxw-VRAr5DR4TMcSHW3-YGQmXJPKoOD7dTABAiMqHcNs51X7ltl0Y59z6VhWY_rNV/exec",
+    "4C": "https://script.google.com/macros/s/AKfycbyZiLmqhzQkLPXc5bO902u2f1kbLFMp3WSmtG4gic-20VPEEP08QH-Ck_GArAY_B78dKw/exec",
+    "5A": "https://script.google.com/macros/s/AKfycbww8jozYEiGYnOWYjeaGGlDQfYbF8mRp8DvXvAbIS1JJpfSmHjHZYu7SJZzZl3uSo7lZA/exec",
+    "5B": "https://script.google.com/macros/s/AKfycbxh7-p2ug3CdkYt5nMT5hukggHx8csGkF8uauseDLjqrWrUyu42-EGdB5Vd9D9eGqT3kQ/exec",
+    "5C": "https://script.google.com/macros/s/AKfycbzK0jKfEhMOzLNjN4DbzNkGZyAYYJYXd6vBTxzCtE3bNBGQsY-hBbN-mf2XRmqCB148/exec",
+    "6A": "https://script.google.com/macros/s/AKfycbyyXmjBctPVgKiuDBpqp5ASTEKr3zg52uqnC9HlPV3BZPvRP0KSKtsxm8dlX6o_OG0TTw/exec",
+    "6B": "https://script.google.com/macros/s/AKfycbwajXdwP6CfskszmMNTm3Aw8-UdHihGHZV9WQbzW4YhP2iK3r8JEOYi71wRU99Zqfyu/exec",
+    "6C": "https://script.google.com/macros/s/AKfycbwhIPdvNgu4z02pQ6Q_AXjL7OQaf1VFj6p1x7wR9nQ-RUWusqYW5OFXPnGVQEOGCPbnLQ/exec"
+  };
 
-  <button id="kirimBtn" class="btn" style="display:none;">Kirim</button>
-  <button id="batalBtn" class="btn" style="display:none;">Batal</button>
-  <button id="rescanBtn" class="btn" style="display:none;">Scan Ulang</button>
+  const readerDiv = document.getElementById("reader");
+  const resultDiv = document.getElementById("result");
+  const kirimBtn = document.getElementById("kirimBtn");
+  const batalBtn = document.getElementById("batalBtn");
+  const rescanBtn = document.getElementById("rescanBtn");
+  const kelasSelect = document.getElementById("kelas");
 
-  <iframe id="formFrame" name="formFrame"></iframe>
+  let html5QrCode;
+  let scannedData = "";
 
-  <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbz6_AAjVPJajEmaqqHaqujf1VR6U_54uv3BUm6IyNxVNm3_RlyaEmBqWbq-G8RPkCM/exec";
-    const readerDiv = document.getElementById("reader");
-    const resultDiv = document.getElementById("result");
-    const kirimBtn = document.getElementById("kirimBtn");
-    const batalBtn = document.getElementById("batalBtn");
-    const rescanBtn = document.getElementById("rescanBtn");
+  // 🔹 Fungsi untuk memulai scanner
+  function startScanner() {
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        scannedData = decodedText;
+        resultDiv.innerHTML = `<strong>Data Terdeteksi:</strong><br>${decodedText}`;
+        kirimBtn.style.display = "inline-block";
+        batalBtn.style.display = "inline-block";
+        html5QrCode.stop().then(() => html5QrCode.clear());
+      },
+      (errorMessage) => {}
+    ).catch((err) => console.error(err));
+  }
 
-    let html5QrCode;
-    let scannedData = "";
+  // 🔹 Kirim data ke spreadsheet sesuai kelas
+  kirimBtn.addEventListener("click", () => {
+    const kelas = kelasSelect.value;
 
-    function startScanner() {
-      html5QrCode = new Html5Qrcode("reader");
-      html5QrCode.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decodedText) => {
-          scannedData = decodedText;
-          resultDiv.innerHTML = `<strong>Data Terdeteksi:</strong><br>${decodedText}`;
-          kirimBtn.style.display = "inline-block";
-          batalBtn.style.display = "inline-block";
-          html5QrCode.stop().then(() => html5QrCode.clear());
-        },
-        (errorMessage) => {}
-      ).catch((err) => console.error(err));
+    if (!kelas) {
+      alert("⚠️ Silakan pilih kelas terlebih dahulu!");
+      return;
     }
 
-    kirimBtn.addEventListener("click", () => {
-      const tanggal = new Date().toLocaleDateString("id-ID");
-      const url = `${scriptURL}?nama=${encodeURIComponent(scannedData)}&tanggal=${encodeURIComponent(tanggal)}`;
+    const scriptURL = scriptURLs[kelas];
+    if (!scriptURL) {
+      alert("URL untuk kelas ini belum diatur!");
+      return;
+    }
 
-      resultDiv.innerHTML = "⏳ Sedang mengirim data... mohon tunggu";
-      
-      fetch(url)
-        .then(() => {
-          resultDiv.innerHTML = `<strong style="color:green;">Data berhasil dikirim!</strong><br>${scannedData}`;
-          kirimBtn.style.display = "none";
-          batalBtn.style.display = "none";
-          rescanBtn.style.display = "inline-block";
-        })
-        .catch((err) => {
-          resultDiv.innerHTML = `<span style="color:red;">Gagal mengirim data. Coba lagi.</span>`;
-          console.error(err);
-        });
-    });
+    const tanggal = new Date().toLocaleDateString("id-ID");
+    const url = `${scriptURL}?nama=${encodeURIComponent(scannedData)}&tanggal=${encodeURIComponent(tanggal)}`;
 
-    batalBtn.addEventListener("click", () => {
-      resultDiv.innerHTML = "Kembali ke mode scan...";
-      kirimBtn.style.display = "none";
-      batalBtn.style.display = "none";
-      setTimeout(() => {
-        resultDiv.innerHTML = "";
-        startScanner();
-      }, 500);
-    });
+    resultDiv.innerHTML = "⏳ Sedang mengirim data... mohon tunggu";
+    kirimBtn.style.display = "none";
+    batalBtn.style.display = "none";
 
-    rescanBtn.addEventListener("click", () => {
-      rescanBtn.style.display = "none";
+    fetch(url)
+      .then(() => {
+        resultDiv.innerHTML = `<strong style="color:green;">✅ Data berhasil dikirim ke kelas ${kelas}!</strong><br>${scannedData}`;
+        rescanBtn.style.display = "inline-block";
+      })
+      .catch((err) => {
+        resultDiv.innerHTML = `<span style="color:red;">❌ Gagal mengirim data. Coba lagi.</span>`;
+        console.error(err);
+      });
+  });
+
+  // 🔹 Tombol Batal → kembali ke mode scan
+  batalBtn.addEventListener("click", () => {
+    resultDiv.innerHTML = "Kembali ke mode scan...";
+    kirimBtn.style.display = "none";
+    batalBtn.style.display = "none";
+    setTimeout(() => {
       resultDiv.innerHTML = "";
       startScanner();
-    });
+    }, 500);
+  });
 
-    // Jalankan scanner pertama kali
+  // 🔹 Tombol Scan Ulang → mulai lagi dari awal
+  rescanBtn.addEventListener("click", () => {
+    rescanBtn.style.display = "none";
+    resultDiv.innerHTML = "";
     startScanner();
-  </script>
+  });
+
+  // 🔹 Jalankan scanner pertama kali
+  startScanner();
+
+
+  // =========================
+  // 🔸 FITUR FULLSCREEN 🔸
+  // =========================
+
+  const fsBtn = document.getElementById("fsBtn");
+  const exitFsBtn = document.getElementById("exitFsBtn");
+  const appContainer = document.getElementById("appContainer");
+
+  // 🔹 Masuk fullscreen
+  fsBtn.addEventListener("click", async () => {
+    try {
+      if (appContainer.requestFullscreen) {
+        await appContainer.requestFullscreen();
+      } else if (appContainer.webkitRequestFullscreen) {
+        appContainer.webkitRequestFullscreen(); // Safari
+      } else if (appContainer.msRequestFullscreen) {
+        appContainer.msRequestFullscreen(); // Edge lama
+      }
+      fsBtn.style.display = "none";
+      exitFsBtn.style.display = "inline-block";
+    } catch (err) {
+      console.error("Gagal masuk fullscreen:", err);
+    }
+  });
+
+  // 🔹 Keluar fullscreen
+  exitFsBtn.addEventListener("click", () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+    exitFsBtn.style.display = "none";
+    fsBtn.style.display = "inline-block";
+  });
+
+  // 🔹 Update tombol otomatis jika user keluar fullscreen manual (usap layar/back)
+  document.addEventListener("fullscreenchange", () => {
+    const aktif = !!document.fullscreenElement;
+    fsBtn.style.display = aktif ? "none" : "inline-block";
+    exitFsBtn.style.display = aktif ? "inline-block" : "none";
+  });
+</script>
 </body>
 </html>

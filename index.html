@@ -87,16 +87,39 @@
     #kirimBtn { background-color: #4CAF50; }
     #batalBtn { background-color: #f44336; }
     #rescanBtn { background-color: #2196F3; }
-    #fsBtn { background-color: #ff9800; }
 
     .btn:hover { opacity: 0.9; }
 
     iframe {
       display: none;
     }
+
+    /* 🔹 Tombol panah pojok kiri atas */
+    #fullscreenBtn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 22px;
+      background: transparent;
+      border: none;
+      color: white;
+      cursor: pointer;
+      z-index: 1000;
+      padding: 5px 10px;
+      border-radius: 8px;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    #fullscreenBtn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
   </style>
 </head>
 <body>
+  <!-- 🔹 Tombol panah untuk toggle fullscreen -->
+  <button id="fullscreenBtn"><-</button>
+
   <!-- 🔹 Bungkus semua dalam #appContainer agar bagian ini yang fullscreen -->
   <div id="appContainer">
     <div class="header">
@@ -121,12 +144,6 @@
           <option value="6B">Kelas 6B</option>
           <option value="6C">Kelas 6C</option>
         </select>
-      </div>
-
-      <!-- 🔹 Tombol fullscreen sementara -->
-      <div style="margin-top:15px;">
-        <button id="fsBtn" class="btn">📱 Fullscreen</button>
-        <button id="exitFsBtn" class="btn" style="display:none;">❌ Keluar</button>
       </div>
     </div>
 
@@ -237,49 +254,44 @@
   startScanner();
 
 
-  // =========================
-  // 🔸 FITUR FULLSCREEN 🔸
-  // =========================
+ //fullscren
+  const fsBtn = document.getElementById("fullscreenBtn");
+  let isFullscreen = false;
 
-  const fsBtn = document.getElementById("fsBtn");
-  const exitFsBtn = document.getElementById("exitFsBtn");
-  const appContainer = document.getElementById("appContainer");
+  fsBtn.textContent = "<-"; // tampilkan tanda panah
 
-  // 🔹 Masuk fullscreen
   fsBtn.addEventListener("click", async () => {
     try {
-      if (appContainer.requestFullscreen) {
-        await appContainer.requestFullscreen();
-      } else if (appContainer.webkitRequestFullscreen) {
-        appContainer.webkitRequestFullscreen(); // Safari
-      } else if (appContainer.msRequestFullscreen) {
-        appContainer.msRequestFullscreen(); // Edge lama
+      if (!isFullscreen) {
+        // 🔹 Masuk fullscreen
+        const el = document.documentElement; // seluruh halaman
+        if (el.requestFullscreen) {
+          await el.requestFullscreen({ navigationUI: "hide" });
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        } else if (el.msRequestFullscreen) {
+          el.msRequestFullscreen();
+        }
+        isFullscreen = true;
+      } else {
+        // 🔹 Keluar fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+        isFullscreen = false;
       }
-      fsBtn.style.display = "none";
-      exitFsBtn.style.display = "inline-block";
     } catch (err) {
-      console.error("Gagal masuk fullscreen:", err);
+      console.error("Gagal ubah fullscreen:", err);
     }
   });
 
-  // 🔹 Keluar fullscreen
-  exitFsBtn.addEventListener("click", () => {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    }
-    exitFsBtn.style.display = "none";
-    fsBtn.style.display = "inline-block";
-  });
-
-  // 🔹 Update tombol otomatis jika user keluar fullscreen manual (usap layar/back)
+  // 🔹 Update status kalau user keluar fullscreen manual
   document.addEventListener("fullscreenchange", () => {
-    const aktif = !!document.fullscreenElement;
-    fsBtn.style.display = aktif ? "none" : "inline-block";
-    exitFsBtn.style.display = aktif ? "inline-block" : "none";
+    isFullscreen = !!document.fullscreenElement;
   });
 </script>
 </body>
